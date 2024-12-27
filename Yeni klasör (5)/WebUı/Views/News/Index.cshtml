@@ -1,0 +1,70 @@
+﻿@model IEnumerable<WebUı.Models.News>
+
+@{
+    ViewData["Title"] = "Index";
+    Layout = "~/Views/Shared/_adminLayout.cshtml";
+}
+
+<div class="container">
+    <h2>Haberler</h2>
+    <p>
+        <a asp-action="Create" class="btn btn-primary">Yeni Haber Ekle</a>
+    </p>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Başlık</th>
+                <th>Resim</th>
+                <th>Kategori</th>
+                <th>Oluşturma Tarihi</th>
+                <th>Görüntülenme</th>
+                <th>Durum</th>
+                <th>İşlemler</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td>@item.Title</td>
+                    <td><img src="@item.ImagePath" style="width:100px; height:50px;"/></td>
+                    <td>@item.Category?.Name</td>
+                    <td>@item.CreatedDate.ToString("dd/MM/yyyy")</td>
+                    <td>@item.ViewCount</td>
+                    <td>@(item.IsActive ? "Aktif" : "Pasif")</td>
+                    <td>
+                        <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-warning btn-sm">Düzenle</a>
+                        <button onclick="deleteNews(@item.Id)" class="btn btn-danger btn-sm">Sil</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@section Scripts {
+    <script>
+        function deleteNews(id) {
+            if (confirm('Bu haberi silmek istediğinizden emin misiniz?')) {
+                $.ajax({
+                    url: '/News/Delete/' + id,
+                    type: 'POST',
+                    success: function (result) {
+                        if (result.success) {
+                            toastr.success(result.message);
+                            setTimeout(function () {
+                                location.reload();
+                            }, 1000);
+                        } else {
+                            toastr.error(result.message);
+                        }
+                    },
+                    error: function () {
+                        toastr.error('Bir hata oluştu');
+                    }
+                });
+            }
+        }
+    </script>
+}
+

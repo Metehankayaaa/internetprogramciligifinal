@@ -1,0 +1,223 @@
+﻿@model News
+@{
+    ViewData["Title"] = "NewsDetail";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb breadcrumb-dark">
+                    <li class="breadcrumb-item"><a href="/">Ana Sayfa</a></li>
+                    <li class="breadcrumb-item"><a href="@Url.Action("CategoryNews","Home",new{categoryId=@Model.CategoryId})">@Model.Category.Name</a></li>
+                    <li class="breadcrumb-item active">@Model.Title</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4 text-light">@Model.Title</h1>
+
+            <div class="text-muted mb-3">
+                <small>
+                    <i class="bi bi-calendar"></i> @Model.CreatedDate.ToString("dd.MM.yyyy HH:mm")
+                    <span class="mx-2">|</span>
+                    <i class="bi bi-eye"></i> @Model.ViewCount görüntülenme
+                </small>
+            </div>
+
+            @if (!string.IsNullOrEmpty(Model.ImagePath))
+            {
+                <img src="@Model.ImagePath" class="img-fluid mb-4 w-100" style="max-height: 100%; object-fit: cover;" alt="@Model.Title">
+            }
+
+            <div class="news-content mb-5 text-light">
+                @Html.Raw(Model.Content)
+            </div>
+        </div>
+    </div>
+
+    <!-- Yorumlar Bölümü -->
+    <div class="row mt-5">
+        <div class="col-12">
+            <h3 class="mb-4 text-light">
+                Yorumlar (<span id="commentCount">@Model.Comments?.Count </span>)
+            </h3>
+
+            @if (User.Identity.IsAuthenticated)
+            {
+                <!-- Eski form yerine yeni form -->
+                <form id="commentForm" class="mb-4">
+                    <input type="hidden" id="newsId" value="@Model.Id" />
+                    <div class="form-group">
+                        <textarea id="commentText" class="form-control" rows="3" placeholder="Yorumunuzu yazın..."></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary mt-2">Yorum Yap</button>
+                </form>
+            }
+            else
+            {
+                <div class="alert alert-info">
+                    Yorum yapabilmek için lütfen <a href="@Url.Action("Login", "Home")">giriş yapın</a>.
+                </div>
+            }
+
+            <!-- Yorumların listeleneceği alan -->
+            <div class="comments-list">
+                @if (Model.Comments != null && Model.Comments.Any())
+                {
+                    foreach (var comment in Model.Comments.OrderByDescending(c => c.CreatedDate))
+                    {
+                        <div class="comment-item card mb-3 bg-dark text-light border-secondary">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <h6 class="card-subtitle mb-2 text-muted">
+                                        <i class="bi bi-person-circle"></i> @comment.User?.Email
+                                    </h6>
+                                    <small class="text-muted">
+                                        @comment.CreatedDate.ToString("dd.MM.yyyy HH:mm")
+                                    </small>
+                                </div>
+                                <p class="card-text">@comment.Content</p>
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <p class="text-muted">Henüz yorum yapılmamış. İlk yorumu siz yapın!</p>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/lib/microsoft/signalr/dist/browser/signalr.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.min.js"></script>
+
+    <script src="~/lib/microsoft/signalr/dist/browser/signalr.js"></script>
+    <script>
+        var connection = new signalR.HubConnectionBuilder()
+            .withUrl("/commentHub")
+            .build();
+
+        connection.start().catch(function (err) {
+            console.error(err.toString());
+        });
+
+        // Yorum formu submit edildiğinde
+        document.getElementById("commentForm").addEventListener("submit", function (event) {
+            event.preventDefault();
+
+            var commentText = document.getElementById("commentText").value;
+            var newsId = document.getElementById("newsId").value;
+
+            // AJAX ile yorum gönder
+            fetch('/Home/AddComment', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    newsId: newsId,
+                    commentText: commentText
+                })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById("commentText").value = "";
+                    }
+                });
+        });
+
+        // Yeni yorum geldiğinde
+        connection.on("ReceiveComment", function (userName, comment, date) {
+            var commentsList = document.querySelector(".comments-list");
+
+            var commentHtml = `
+                        <div class="comment-item card mb-3 bg-dark text-light border-secondary">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <h6 class="card-subtitle mb-2 text-muted">
+                                        <i class="bi bi-person-circle"></i> ${userName}
+                                    </h6>
+                                    <small class="text-muted">${date}</small>
+                                </div>
+                                <p class="card-text">${comment}</p>
+                            </div>
+                        </div>`;
+
+            commentsList.insertAdjacentHTML('afterbegin', commentHtml);
+
+            var countElement = document.getElementById("commentCount");
+            var currentCount = parseInt(countElement.textContent);
+            countElement.textContent = currentCount + 1;
+        });
+    </script>
+}
+
+<style>
+    body {
+        background-color: #121212;
+        color: #ffffff;
+    }
+
+    .breadcrumb-dark {
+        background-color: #343a40;
+        color: #fff;
+    }
+
+        .breadcrumb-dark .breadcrumb-item a {
+            color: #17a2b8;
+        }
+
+        .breadcrumb-dark .breadcrumb-item.active {
+            color: #6c757d;
+        }
+
+    .news-content {
+        color: #ddd;
+    }
+
+    .btn-primary {
+        background-color: #007bff;
+        border-color: #007bff;
+    }
+
+        .btn-primary:hover {
+            background-color: #0056b3;
+            border-color: #0056b3;
+        }
+
+    .alert-info {
+        background-color: #17a2b8;
+        color: white;
+    }
+
+    .comments-list {
+        margin-top: 30px;
+    }
+
+    .comment-item {
+        background-color: #1f1f1f;
+        border: 1px solid #444;
+        color: #ddd;
+    }
+
+        .comment-item .card-body {
+            padding: 15px;
+        }
+
+        .comment-item .text-muted {
+            color: #aaa;
+        }
+
+    .text-muted {
+        color: #6c757d;
+    }
+</style>

@@ -1,0 +1,88 @@
+﻿@model News
+@{
+    ViewData["Title"] = "Edit";
+    Layout = "~/Views/Shared/_adminLayout.cshtml";
+}
+
+<div class="container">
+    <h2>Haber Düzenle</h2>
+    <form asp-action="Edit" method="post" enctype="multipart/form-data">
+        <input type="hidden" asp-for="Id" />
+        <input type="hidden" asp-for="UserId" />
+        <input type="hidden" asp-for="CreatedDate" />
+        <input type="hidden" asp-for="ViewCount" />
+        <input type="hidden" asp-for="ImagePath" />
+
+        <div class="row">
+            <div class="col-md-8">
+                <div class="form-group mb-3">
+                    <label asp-for="Title" class="control-label">Başlık</label>
+                    <input asp-for="Title" class="form-control" />
+                    <span asp-validation-for="Title" class="text-danger"></span>
+                </div>
+
+                <div class="form-group mb-3">
+                    <label asp-for="Content" class="control-label">İçerik</label>
+                    <textarea asp-for="Content" class="form-control" rows="10"></textarea>
+                    <span asp-validation-for="Content" class="text-danger"></span>
+                </div>
+
+                <div class="form-group mb-3">
+                    <label asp-for="CategoryId" class="control-label">Kategori</label>
+                    <select asp-for="CategoryId" class="form-control"
+                            asp-items="@(new SelectList(ViewBag.Categories, "Id", "Name"))">
+                        <option value="">Kategori Seçiniz</option>
+                    </select>
+                    <span asp-validation-for="CategoryId" class="text-danger"></span>
+                </div>
+
+                <div class="form-group mb-3">
+                    <label class="control-label">Yeni Resim</label>
+                    <input type="file" name="image" class="form-control"  required />
+                </div>
+
+                <div class="form-group mb-3">
+                    <div class="custom-control custom-switch">
+                        <input asp-for="IsActive" class="custom-control-input" type="checkbox" />
+                        <label class="custom-control-label" asp-for="IsActive">Aktif Mi?</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                @if (!string.IsNullOrEmpty(Model.ImagePath))
+                {
+                    <div class="card">
+                        <div class="card-header">
+                            Mevcut Resim
+                        </div>
+                        <div class="card-body">
+                            <img src="@Model.ImagePath" class="img-fluid" alt="Haber Resmi" />
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="form-group mt-3">
+            <button type="submit" class="btn btn-primary">Güncelle</button>
+            <a asp-action="Index" class="btn btn-secondary">İptal</a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script>
+        // CKEditor veya başka bir zengin metin editörü eklemek isterseniz:
+        /*
+        CKEDITOR.replace('Content', {
+            height: 400
+        });
+        */
+    </script>
+}
+

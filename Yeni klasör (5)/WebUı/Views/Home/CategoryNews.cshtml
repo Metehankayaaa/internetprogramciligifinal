@@ -1,0 +1,129 @@
+﻿
+@{
+    ViewData["Title"] = "CategoryNews";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@model Category
+
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <h2 class="mb-4">@Model.Name</h2>
+            <p class="text-muted">@Model.Description</p>
+        </div>
+    </div>
+
+    <div class="row">
+        @foreach (var news in Model.News.OrderByDescending(n => n.CreatedDate))
+        {
+            <div class="col-md-4 mb-4">
+                <div class="card h-100">
+                    @if (!string.IsNullOrEmpty(news.ImagePath))
+                    {
+                        <img src="@news.ImagePath" class="card-img-top" alt="@news.Title" style="height: 200px; object-fit: cover;">
+                    }
+                    <div class="card-body">
+                        <h5 class="card-title">@news.Title</h5>
+                        <p class="card-text">@(news.Content?.Length > 100 ? news.Content.Substring(0, 100) + "..." : news.Content)</p>
+                        <p class="card-text">
+                            <small class="text-muted">
+                                @news.CreatedDate.ToString("dd.MM.yyyy HH:mm")
+                                <span class="float-end">
+                                    <i class="bi bi-eye"></i> @news.ViewCount
+                                </span>
+                            </small>
+                        </p>
+                        <a asp-controller="Home" asp-action="NewsDetail" asp-route-id="@news.Id" class="btn btn-primary btn-sm">Devamını Oku</a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+<style>
+    /* General styling for news cards */
+    .card {
+        border-radius: 10px;
+        border: none;
+        transition: transform 0.2s ease, box-shadow 0.3s ease;
+    }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+    .card-title {
+        font-size: 1.1rem;
+        font-weight: bold;
+        color: #343a40;
+    }
+
+    .card-text {
+        color: #6c757d;
+    }
+
+    .card-body {
+        padding: 1.25rem;
+    }
+
+    .btn-primary {
+        background-color: #007bff;
+        border-color: #007bff;
+        font-weight: bold;
+        text-transform: uppercase;
+        border-radius: 20px;
+    }
+
+    .btn-outline-primary {
+        border-color: #007bff;
+        color: #007bff;
+        font-weight: bold;
+        text-transform: uppercase;
+        border-radius: 20px;
+    }
+
+        .btn-outline-primary:hover {
+            background-color: #007bff;
+            color: #fff;
+        }
+
+    .btn-sm {
+        padding: 5px 15px;
+        font-size: 0.9rem;
+    }
+
+    .text-muted {
+        font-size: 0.85rem;
+    }
+
+    .text-primary {
+        color: #007bff;
+    }
+
+    .bi-eye {
+        font-size: 1rem;
+    }
+
+    /* Centering the "More News" button */
+    .col-12.text-center.mt-3 {
+        margin-top: 2rem;
+    }
+
+    /* Responsive styles */
+    @@media (max-width: 768px) {
+        .card-img-top {
+            height: 180px;
+        }
+
+        .card-title {
+            font-size: 1rem;
+        }
+
+        .card-text {
+            font-size: 0.85rem;
+        }
+    }
+</style>
+

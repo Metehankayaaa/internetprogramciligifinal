@@ -1,0 +1,80 @@
+﻿@model List<Comment>
+@{
+    ViewData["Title"] = "Dashboard";
+    Layout = "~/Views/Shared/_adminLayout.cshtml";
+}
+
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">
+                    <i class="fas fa-comments"></i>
+                    Canlı Yorum Akışı
+                    <small class="float-right text-muted">Son yorumlar anlık olarak görüntülenir</small>
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="liveComments">
+                    @foreach (var comment in Model)
+                    {
+                        <div class="comment-item border-bottom pb-3 mb-3">
+                            <div class="d-flex justify-content-between">
+                                <h6>
+                                    <i class="fas fa-user-circle"></i>
+                                    @comment.User?.Email
+                                    <small class="text-muted">
+                                        (@comment.News?.Title)
+                                    </small>
+                                </h6>
+                                <small class="text-muted">@comment.CreatedDate.ToString("dd.MM.yyyy HH:mm")</small>
+                            </div>
+                            <p class="mb-0">@comment.Content</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/lib/microsoft/signalr/dist/browser/signalr.min.js"></script>
+    <script src="~/lib/microsoft/signalr/dist/browser/signalr.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.min.js"></script>
+    <script>
+        var connection = new signalR.HubConnectionBuilder()
+            .withUrl("/commentHub")
+            .build();
+
+        connection.start().catch(function (err) {
+            console.error(err.toString());
+        });
+
+        connection.on("ReceiveComment", function (userName, comment, date) {
+            var commentHtml = `
+                <div class="comment-item border-bottom pb-3 mb-3" style="display: none;">
+                    <div class="d-flex justify-content-between">
+                        <h6>
+                            <i class="fas fa-user-circle"></i>
+                            ${userName}
+                        </h6>
+                        <small class="text-muted">${date}</small>
+                    </div>
+                    <p class="mb-0">${comment}</p>
+                </div>`;
+
+            // Yeni yorumu en üste ekle ve animasyonla göster
+            $(commentHtml).prependTo("#liveComments").slideDown();
+
+            // Son yorum fazlaysa en alttakini kaldır
+            if ($("#liveComments .comment-item").length > 10) {
+                $("#liveComments .comment-item:last").remove();
+            }
+
+            // Bildirim göster
+            toastr.info('Yeni bir yorum eklendi!', 'Bildirim');
+        });
+    </script>
+}

@@ -1,0 +1,173 @@
+﻿
+@{
+    ViewData["Title"] = "UsersList";
+    Layout = "~/Views/Shared/_adminLayout.cshtml";
+}
+
+@{
+    ViewData["Title"] = "Kullanıcı Yönetimi";
+    Layout = "~/Views/Shared/_adminLayout.cshtml";
+}
+
+
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Kullanıcı Listesi</h3>
+    </div>
+    <div class="card-body">
+        <table id="usersTable" class="table table-bordered table-striped">
+            <thead>
+                <tr>
+                    <th>Email</th>
+                    <th>Kullanıcı Adı</th>
+                    <th>Roller</th>
+                    <th>İşlemler</th>
+                </tr>
+            </thead>
+        </table>
+    </div>
+</div>
+
+<!-- Rol Güncelleme Modal -->
+<div class="modal fade" id="updateRoleModal" tabindex="-1" role="dialog" aria-labelledby="updateRoleModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="updateRoleModalLabel">Kullanıcı Rolünü Güncelle</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="selectedUserId" />
+                <div class="form-group">
+                    <label>Email:</label>
+                    <span id="userEmail" class="form-control-plaintext"></span>
+                </div>
+                <div class="form-group">
+                    <label for="roleSelect">Rol Seçin:</label>
+                    <select id="roleSelect" class="form-control">
+                        <option value="Admin">Admin</option>
+                        <option value="Gazetici">Gazetici</option>
+                        <option value="User">User</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">İptal</button>
+                <button type="button" class="btn btn-primary" id="saveRoleButton">Kaydet</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.datatables.net/1.10.24/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.10.24/js/dataTables.bootstrap4.min.js"></script>
+
+    <script>
+        $(document).ready(function () {
+            var table = $('#usersTable').DataTable({
+                "processing": true,
+                "serverSide": false,
+                "ajax": {
+                    "url": "/Admin/GetUsers",
+                    "type": "GET",
+                    "datatype": "json"
+                },
+                "language": {
+                    "url": "//cdn.datatables.net/plug-ins/1.10.24/i18n/Turkish.json"
+                },
+                "columns": [
+                    { "data": "email" },
+                    { "data": "userName" },
+                    {
+                        "data": "roles",
+                        "render": function (data) {
+                            return data.join(', ');
+                        }
+                    },
+                    {
+                        "data": "id",
+                        "render": function (data, type, row) {
+                            return `
+                                        <button class="btn btn-primary btn-sm update-role" data-userid="${data}" data-email="${row.email}" data-roles='${JSON.stringify(row.roles)}'>
+                                            <i class="fas fa-user-edit"></i> Rol Değiştir
+                                        </button>
+                                        <button class="btn btn-danger btn-sm ml-2 delete-user" data-userid="${data}">
+                                            <i class="fas fa-trash"></i> Sil
+                                        </button>
+                                    `;
+                        }
+                    }
+                ]
+            });
+
+            // Rol güncelleme modalını aç
+            $(document).on('click', '.update-role', function () {
+                var userId = $(this).data('userid');
+                var email = $(this).data('email');
+                var roles = $(this).data('roles');
+
+                $('#selectedUserId').val(userId);
+                $('#userEmail').text(email);
+                $('#roleSelect').val(roles[0]); // İlk rolü seç
+                $('#updateRoleModal').modal('show');
+            });
+
+            // Rol güncelleme
+            $('#saveRoleButton').click(function () {
+                var userId = $('#selectedUserId').val();
+                var newRole = $('#roleSelect').val();
+
+                $.ajax({
+                    url: '/Admin/UpdateUserRole',
+                    type: 'POST',
+                    data: { userId: userId, newRole: newRole },
+                    success: function (response) {
+                        if (response.success) {
+                            toastr.success(response.message);
+                            toastr.options = {
+                                "closeButton": true,
+                                "progressBar": true,
+                                "positionClass": "toast-bottom-right", // Sağ alt köşe
+                                "timeOut": "3000" // 3 saniye süre
+                            };
+                            $('#updateRoleModal').modal('hide');
+                            table.ajax.reload();
+                        } else {
+                            toastr.error(response.message);
+                        }
+                    }
+                });
+            });
+
+            // Kullanıcı silme
+            $(document).on('click', '.delete-user', function () {
+                var userId = $(this).data('userid');
+
+                if (confirm('Kullanıcıyı silmek istediğinize emin misiniz?')) {
+                    $.ajax({
+                        url: '/Admin/DeleteUser',
+                        type: 'POST',
+                        data: { userId: userId },
+                        success: function (response) {
+                            if (response.success) {
+                                toastr.success(response.message);
+                                toastr.options = {
+                                    "closeButton": true,
+                                    "progressBar": true,
+                                    "positionClass": "toast-bottom-right", // Sağ alt köşe
+                                    "timeOut": "3000" // 3 saniye süre
+                                };
+                                table.ajax.reload();
+                            } else {
+                                toastr.error(response.message);
+                            }
+                        }
+                    });
+                }
+            });
+        });
+    </script>
+}
